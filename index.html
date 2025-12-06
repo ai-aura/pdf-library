@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A modern PDF reader and library management system. Add, organize, and read your PDF documents with highlights, bookmarks, and notes.">
+    <meta name="keywords" content="PDF reader, PDF library, document viewer, ebook reader">
+    <meta name="author" content="PDF Library">
+    <meta property="og:title" content="PDF Library">
+    <meta property="og:description" content="A modern PDF reader and library management system">
+    <meta property="og:type" content="website">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
+    <title>PDF Library</title>
+    
+    <style>
+        :root {
+            --bg-gradient-start: #667eea;
+            --bg-gradient-end: #764ba2;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-color: white;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            min-height: 100vh;
+            color: var(--text-color);
+            padding: 2rem;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        header {
+            max-width: 1400px;
+            margin: 0 auto 2rem;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-color);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            border: none;
+        }
+
+        .controls-bar {
+            max-width: 1400px;
+            margin: 0 auto 2rem;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            max-width: 400px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .filter-sort {
+            display: flex;
+            gap: 1rem;
+        }
+
+        select {
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-color);
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+        }
+
+        select option {
+            background: #333;
+            color: white;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .view-btn {
+            padding: 0.75rem;
+            border-radius: 10px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .view-btn.active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .pdf-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .pdf-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .pdf-list .pdf-card {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .pdf-list .card-cover {
+            width: 120px;
+            min-width: 120px;
+            height: 160px;
+        }
+
+        .pdf-list .card-content {
+            flex: 1;
+        }
+
+        .pdf-card {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .pdf-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-cover {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .card-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .card-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .pdf-card:hover .card-overlay {
+            opacity: 1;
+        }
+
+        .btn-read {
+            padding: 0.6rem 1.2rem;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .card-meta {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-bottom: 1rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            transition: width 0.3s ease;
+        }
+
+        .card-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.15);
+            font-size: 0.75rem;
+        }
+
+        .btn-favorite {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .btn-favorite:hover {
+            background: rgba(0, 0, 0, 0.7);
+            transform: scale(1.1);
+        }
+
+        .btn-favorite.active {
+            color: #FFD700;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            grid-column: 1 / -1;
+        }
+
+        .empty-icon {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-text {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            max-width: 500px;
+            width: 90%;
+            padding: 2rem;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .header-actions {
+                justify-content: center;
+            }
+
+            .pdf-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .controls-bar {
+                flex-direction: column;
+            }
+
+            .search-box {
+                max-width: 100%;
+            }
+
+            .filter-sort {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .pdf-list .pdf-card {
+                flex-direction: column;
+            }
+
+            .pdf-list .card-cover {
+                width: 100%;
+                height: 150px;
+            }
+        }
+
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .pdf-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Button hover states */
+        .btn-read:hover {
+            background: white;
+            transform: scale(1.05);
+        }
+
+        .btn-delete:hover {
+            background: rgba(244, 67, 54, 1) !important;
+            transform: scale(1.05);
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* Toast Styles */
+        .toast {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            color: white;
+            z-index: 3000;
+            animation: slideIn 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .toast.success { background: rgba(76, 175, 80, 0.95); }
+        .toast.error { background: rgba(244, 67, 54, 0.95); }
+        .toast.info { background: rgba(33, 150, 243, 0.95); }
+        .toast.warning { background: rgba(255, 152, 0, 0.95); }
+
+        /* Confirm Modal */
+        .confirm-modal {
+            text-align: center;
+        }
+
+        /* Password Modal */
+        .password-input {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.5rem;
+            text-align: center;
+            letter-spacing: 0.5rem;
+            border-radius: 12px;
+            border: 2px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--text-color);
+            margin: 1rem 0;
+        }
+
+        .password-input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .password-error {
+            color: #ff6b6b;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        .password-error.show {
+            display: block;
+        }
+
+        .confirm-modal p {
+            margin: 1rem 0 1.5rem;
+            opacity: 0.9;
+        }
+
+        .confirm-modal .btn-group {
+            justify-content: center;
+        }
+
+        .btn-danger {
+            background: rgba(244, 67, 54, 0.9);
+            border: none;
+        }
+
+        .btn-danger:hover {
+            background: rgba(244, 67, 54, 1);
+        }
+
+        /* Footer */
+        footer {
+            max-width: 1400px;
+            margin: 2rem auto 0;
+            padding: 1.5rem 2rem;
+            text-align: center;
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: white;
+            text-decoration: none;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+
+        footer a:hover {
+            opacity: 1;
+        }
+
+        /* Focus States for Accessibility */
+        .btn:focus,
+        .view-btn:focus,
+        .search-input:focus,
+        select:focus {
+            outline: 2px solid rgba(255,255,255,0.5);
+            outline-offset: 2px;
+        }
+
+        /* Improved Button Hover */
+        .view-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <header class="glass-panel">
+        <h1>PDF Library</h1>
+        <div class="header-actions">
+            <button class="btn" id="stats-btn" aria-label="View library statistics">
+                📊 Statistics
+            </button>
+            <button class="btn btn-primary" id="add-pdf-btn" aria-label="Add new PDF to library">
+                ➕ Add PDF
+            </button>
+        </div>
+    </header>
+
+    <div class="controls-bar glass-panel">
+        <div class="search-box">
+            <input type="search" class="search-input" id="search-input" placeholder="🔍 Search PDFs..." aria-label="Search PDFs" />
+        </div>
+        <div class="filter-sort">
+            <select id="filter-select" aria-label="Filter PDFs">
+                <option value="all">All PDFs</option>
+                <option value="favorites">Favorites</option>
+                <option value="in-progress">In Progress</option>
+                <option value="completed">Completed</option>
+            </select>
+            <select id="sort-select" aria-label="Sort PDFs">
+                <option value="recent">Recently Read</option>
+                <option value="added">Date Added</option>
+                <option value="title">Title (A-Z)</option>
+                <option value="progress">Progress</option>
+            </select>
+        </div>
+        <div class="view-toggle">
+            <button class="view-btn active" id="grid-view-btn" aria-label="Grid view" title="Grid view">🔲</button>
+            <button class="view-btn" id="list-view-btn" aria-label="List view" title="List view">☰</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="library-container" class="pdf-grid">
+            <div class="empty-state glass-panel">
+                <div class="empty-icon">📚</div>
+                <div class="empty-text">No PDFs yet</div>
+                <p style="opacity: 0.7; margin-bottom: 1.5rem;">Load a PDF to start reading</p>
+                <button class="btn btn-primary" onclick="document.getElementById('add-pdf-btn').click()">
+                    ➕ Add Your First PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="add-pdf-modal">
+        <div class="modal-content glass-panel">
+            <h2>➕ Add PDF to Library</h2>
+            <div class="form-group">
+                <label class="form-label" for="pdf-url-input">PDF URL</label>
+                <input type="url" class="form-input" id="pdf-url-input" placeholder="https://example.com/document.pdf" autocomplete="url" />
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="pdf-title-input">Title (Optional)</label>
+                <input type="text" class="form-input" id="pdf-title-input" placeholder="My Document" autocomplete="off" />
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="pdf-category-input">Category (Optional)</label>
+                <select class="form-input" id="pdf-category-input">
+                    <option value="">Select category</option>
+                    <option value="Fiction">Fiction</option>
+                    <option value="Non-fiction">Non-fiction</option>
+                    <option value="Education">Education</option>
+                    <option value="Technical">Technical</option>
+                    <option value="Business">Business</option>
+                    <option value="Science">Science</option>
+                    <option value="Art">Art</option>
+                    <option value="History">History</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="btn-group">
+                <button class="btn" id="cancel-add-btn">Cancel</button>
+                <button class="btn btn-primary" id="confirm-add-btn">Add to Library</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div class="modal-overlay" id="password-modal">
+        <div class="modal-content glass-panel confirm-modal">
+            <h2>🔒 Enter Password</h2>
+            <p id="password-action-text">Enter password to continue</p>
+            <input type="password" class="password-input" id="password-input" maxlength="4" placeholder="••••" autocomplete="off" />
+            <div class="password-error" id="password-error">❌ Incorrect password</div>
+            <div class="btn-group">
+                <button class="btn" id="password-cancel-btn">Cancel</button>
+                <button class="btn btn-primary" id="password-submit-btn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div class="modal-overlay" id="confirm-modal">
+        <div class="modal-content glass-panel confirm-modal">
+            <h2>🗑️ Remove PDF</h2>
+            <p id="confirm-message">Are you sure you want to remove this PDF from your library?</p>
+            <div class="btn-group">
+                <button class="btn" id="confirm-cancel-btn">Cancel</button>
+                <button class="btn btn-danger" id="confirm-delete-btn">Remove</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Modal -->
+    <div class="modal-overlay" id="stats-modal">
+        <div class="modal-content glass-panel">
+            <h2>📊 Library Statistics</h2>
+            <div id="stats-content" style="margin-top: 1.5rem;">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                    <div style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 2.5rem; font-weight: 700;" id="stat-total">0</div>
+                        <div style="opacity: 0.8;">Total PDFs</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 2.5rem; font-weight: 700;" id="stat-favorites">0</div>
+                        <div style="opacity: 0.8;">Favorites</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 2.5rem; font-weight: 700;" id="stat-time">0m</div>
+                        <div style="opacity: 0.8;">Reading Time</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 2.5rem; font-weight: 700;" id="stat-progress">0%</div>
+                        <div style="opacity: 0.8;">Avg Progress</div>
+                    </div>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="close-stats-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let library = [];
+        let currentView = 'grid';
+        let currentFilter = 'all';
+        let currentSort = 'recent';
+
+        const libraryContainer = document.getElementById('library-container');
+        const addPdfBtn = document.getElementById('add-pdf-btn');
+        const addPdfModal = document.getElementById('add-pdf-modal');
+        const cancelAddBtn = document.getElementById('cancel-add-btn');
+        const confirmAddBtn = document.getElementById('confirm-add-btn');
+        const pdfUrlInput = document.getElementById('pdf-url-input');
+        const pdfTitleInput = document.getElementById('pdf-title-input');
+        const pdfCategoryInput = document.getElementById('pdf-category-input');
+        const searchInput = document.getElementById('search-input');
+        const filterSelect = document.getElementById('filter-select');
+        const sortSelect = document.getElementById('sort-select');
+        const gridViewBtn = document.getElementById('grid-view-btn');
+        const listViewBtn = document.getElementById('list-view-btn');
+        const statsBtn = document.getElementById('stats-btn');
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+        const passwordModal = document.getElementById('password-modal');
+        const passwordInput = document.getElementById('password-input');
+        const passwordError = document.getElementById('password-error');
+        const passwordCancelBtn = document.getElementById('password-cancel-btn');
+        const passwordSubmitBtn = document.getElementById('password-submit-btn');
+        const passwordActionText = document.getElementById('password-action-text');
+        
+        let pendingDeleteId = null;
+        let pendingAction = null; // 'add', 'delete', or 'stats'
+        const APP_PASSWORD = '6358';
+
+        function loadLibrary() {
+            try {
+                const stored = localStorage.getItem('library');
+                library = stored ? JSON.parse(stored) : [];
+            } catch (error) {
+                console.error('Failed to load library:', error);
+                library = [];
+                showToast('Failed to load library data', 'error');
+            }
+            renderLibrary();
+        }
+
+        function saveLibrary() {
+            try {
+                localStorage.setItem('library', JSON.stringify(library));
+            } catch (error) {
+                console.error('Failed to save library:', error);
+                showToast('Failed to save changes', 'error');
+            }
+        }
+
+        function isValidUrl(string) {
+            try {
+                const url = new URL(string, window.location.href);
+                return url.protocol === 'http:' || url.protocol === 'https:' || string.endsWith('.pdf');
+            } catch (_) {
+                return string.endsWith('.pdf');
+            }
+        }
+
+        function isDuplicateUrl(url) {
+            return library.some(pdf => pdf.url === url);
+        }
+
+        function generateId() {
+            return 'pdf_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
+        }
+
+        function generateHash(url) {
+            let hash = 0;
+            for (let i = 0; i < url.length; i++) {
+                const char = url.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return Math.abs(hash).toString(36);
+        }
+
+        // Sanitize string to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function addPDF() {
+            const url = pdfUrlInput.value.trim();
+            
+            if (!url) {
+                showToast('Please enter a PDF URL', 'warning');
+                pdfUrlInput.focus();
+                return;
+            }
+
+            if (!isValidUrl(url)) {
+                showToast('Please enter a valid URL', 'error');
+                pdfUrlInput.focus();
+                return;
+            }
+
+            if (isDuplicateUrl(url)) {
+                showToast('This PDF is already in your library', 'warning');
+                return;
+            }
+
+            const title = pdfTitleInput.value.trim() || 'Untitled PDF';
+            const category = pdfCategoryInput.value || 'Uncategorized';
+
+            const pdf = {
+                id: generateId(),
+                url: url,
+                urlHash: generateHash(url),
+                title: title,
+                author: '',
+                cover: '',
+                totalPages: 0,
+                currentPage: 1,
+                progress: 0,
+                favorite: false,
+                category: category,
+                tags: [],
+                dateAdded: new Date().toISOString(),
+                lastRead: new Date().toISOString(),
+                readingTime: 0,
+                fileSize: ''
+            };
+
+            library.push(pdf);
+            saveLibrary();
+            renderLibrary();
+            closeModal();
+            
+            showToast('PDF added to library!', 'success');
+        }
+
+        function removePDF(id) {
+            const pdf = library.find(p => p.id === id);
+            if (pdf) {
+                // Request password before deleting
+                pendingAction = 'delete';
+                pendingDeleteId = id;
+                passwordActionText.textContent = `Enter password to remove "${pdf.title}"`;
+                passwordInput.value = '';
+                passwordError.classList.remove('show');
+                passwordModal.classList.add('active');
+                setTimeout(() => passwordInput.focus(), 100);
+            }
+        }
+
+        function confirmDelete() {
+            if (pendingDeleteId) {
+                library = library.filter(pdf => pdf.id !== pendingDeleteId);
+                saveLibrary();
+                renderLibrary();
+                showToast('PDF removed from library', 'info');
+                pendingDeleteId = null;
+                confirmModal.classList.remove('active');
+            }
+        }
+
+        function toggleFavorite(id) {
+            const pdf = library.find(p => p.id === id);
+            if (pdf) {
+                pdf.favorite = !pdf.favorite;
+                saveLibrary();
+                renderLibrary();
+                showToast(pdf.favorite ? 'Added to favorites!' : 'Removed from favorites', 'success');
+            }
+        }
+
+        function openPDFById(id) {
+            const pdf = library.find(p => p.id === id);
+            if (pdf) {
+                openPDF(pdf);
+            }
+        }
+
+        function openPDF(pdf) {
+            if (!pdf || !pdf.url) {
+                console.error('Invalid PDF object or URL');
+                showToast('Error: Invalid PDF data', 'error');
+                return;
+            }
+
+            try {
+                const readerUrl = `reader.html?pdf=${encodeURIComponent(pdf.url)}`;
+                console.log('Opening PDF:', pdf.title);
+                console.log('Reader URL:', readerUrl);
+                
+                // Update lastRead timestamp
+                pdf.lastRead = new Date().toISOString();
+                saveLibrary();
+                
+                // Method 1: Try using a link click (most reliable, avoids popup blockers)
+                const link = document.createElement('a');
+                link.href = readerUrl;
+                link.target = '_blank';
+                link.rel = 'noopener';
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showToast('Opening PDF reader...', 'info');
+                
+            } catch (error) {
+                console.error('Failed to open PDF:', error);
+                
+                // Fallback: Try direct navigation
+                try {
+                    const readerUrl = `reader.html?pdf=${encodeURIComponent(pdf.url)}`;
+                    window.location.href = readerUrl;
+                } catch (fallbackError) {
+                    console.error('Fallback also failed:', fallbackError);
+                    showToast('Failed to open PDF reader. Please try again.', 'error');
+                }
+            }
+        }
+
+        function renderLibrary() {
+            let filtered = filterLibrary();
+            filtered = sortLibrary(filtered);
+
+            if (filtered.length === 0) {
+                libraryContainer.innerHTML = `
+                    <div class="empty-state glass-panel">
+                        <div class="empty-icon">📚</div>
+                        <div class="empty-text">No PDFs found</div>
+                        <p style="opacity: 0.7; margin-bottom: 1.5rem;">Try adjusting your filters or add a new PDF</p>
+                        <button class="btn btn-primary" onclick="document.getElementById('add-pdf-btn').click()">
+                            ➕ Add PDF
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            libraryContainer.className = currentView === 'grid' ? 'pdf-grid' : 'pdf-list';
+            libraryContainer.innerHTML = filtered.map(pdf => createPDFCard(pdf)).join('');
+
+            // Card click handlers - using event delegation for better reliability
+            document.querySelectorAll('.pdf-card').forEach(card => {
+                const id = card.dataset.id;
+                const pdf = library.find(p => p.id === id);
+                
+                if (!pdf) {
+                    console.error('PDF not found for card:', id);
+                    return;
+                }
+
+                // Card click handler - only open if not clicking a button
+                card.addEventListener('click', (e) => {
+                    const clickedElement = e.target;
+                    // Check if clicked on any button
+                    if (clickedElement.closest('button') || clickedElement.tagName === 'BUTTON') {
+                        return; // Let the button's onclick handle it
+                    }
+                    openPDF(pdf);
+                });
+            });
+        }
+
+        function createPDFCard(pdf) {
+            const progress = pdf.progress || 0;
+            const readingTime = formatTime(pdf.readingTime || 0);
+            const lastRead = new Date(pdf.lastRead).toLocaleDateString();
+
+            return `
+                <div class="pdf-card glass-panel" data-id="${pdf.id}">
+                    <button class="btn-favorite ${pdf.favorite ? 'active' : ''}" onclick="event.stopPropagation(); event.preventDefault(); toggleFavorite('${pdf.id}'); return false;">
+                        ${pdf.favorite ? '⭐' : '☆'}
+                    </button>
+                    <div class="card-cover">
+                        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; font-size: 3rem;">
+                            📄
+                        </div>
+                        <div class="card-overlay">
+                            <button class="btn-read" onclick="event.stopPropagation(); event.preventDefault(); openPDFById('${pdf.id}'); return false;">📖 Read</button>
+                            <button class="btn-delete" style="background: rgba(244, 67, 54, 0.9);" onclick="event.stopPropagation(); event.preventDefault(); removePDF('${pdf.id}'); return false;">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">${escapeHtml(pdf.title)}</h3>
+                        <p class="card-meta">${escapeHtml(pdf.category)} ${pdf.totalPages ? '• ' + pdf.totalPages + ' pages' : ''}</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="card-stats">
+                            <span>📅 ${lastRead}</span>
+                            <span>⏱️ ${readingTime}</span>
+                        </div>
+                        ${pdf.tags.length > 0 ? `
+                            <div class="card-tags">
+                                ${pdf.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Professional search with fuzzy matching and relevance scoring
+        function calculateSearchScore(pdf, searchTerms) {
+            let score = 0;
+            const title = pdf.title.toLowerCase();
+            const category = pdf.category.toLowerCase();
+            const url = pdf.url.toLowerCase();
+            const tags = pdf.tags.map(t => t.toLowerCase()).join(' ');
+            
+            for (const term of searchTerms) {
+                // Exact match in title (highest score)
+                if (title === term) score += 100;
+                // Title starts with term
+                else if (title.startsWith(term)) score += 50;
+                // Title contains term
+                else if (title.includes(term)) score += 30;
+                // Word in title starts with term
+                else if (title.split(/\s+/).some(word => word.startsWith(term))) score += 25;
+                
+                // Category match
+                if (category.includes(term)) score += 20;
+                
+                // Tags match
+                if (tags.includes(term)) score += 15;
+                
+                // URL contains term
+                if (url.includes(term)) score += 10;
+                
+                // Fuzzy match - check if characters appear in order
+                if (fuzzyMatch(title, term)) score += 5;
+            }
+            
+            return score;
+        }
+
+        // Fuzzy matching - checks if characters appear in sequence
+        function fuzzyMatch(text, pattern) {
+            let patternIdx = 0;
+            for (let i = 0; i < text.length && patternIdx < pattern.length; i++) {
+                if (text[i] === pattern[patternIdx]) {
+                    patternIdx++;
+                }
+            }
+            return patternIdx === pattern.length;
+        }
+
+        function filterLibrary() {
+            let filtered = [...library];
+
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            if (searchTerm) {
+                // Split search into multiple terms for better matching
+                const searchTerms = searchTerm.split(/\s+/).filter(t => t.length > 0);
+                
+                // Calculate score for each PDF
+                filtered = filtered.map(pdf => ({
+                    ...pdf,
+                    searchScore: calculateSearchScore(pdf, searchTerms)
+                }));
+                
+                // Filter out PDFs with zero score
+                filtered = filtered.filter(pdf => pdf.searchScore > 0);
+                
+                // Sort by search score (highest first)
+                filtered.sort((a, b) => b.searchScore - a.searchScore);
+            }
+
+            if (currentFilter === 'favorites') {
+                filtered = filtered.filter(pdf => pdf.favorite);
+            } else if (currentFilter === 'in-progress') {
+                filtered = filtered.filter(pdf => pdf.progress > 0 && pdf.progress < 100);
+            } else if (currentFilter === 'completed') {
+                filtered = filtered.filter(pdf => pdf.progress === 100);
+            }
+
+            return filtered;
+        }
+
+        function sortLibrary(pdfs) {
+            const sorted = [...pdfs];
+            
+            // If searching, keep search relevance as primary sort
+            const isSearching = searchInput.value.trim().length > 0;
+            if (isSearching) {
+                // Already sorted by search score in filterLibrary
+                return sorted;
+            }
+
+            if (currentSort === 'recent') {
+                sorted.sort((a, b) => new Date(b.lastRead) - new Date(a.lastRead));
+            } else if (currentSort === 'added') {
+                sorted.sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
+            } else if (currentSort === 'title') {
+                sorted.sort((a, b) => a.title.localeCompare(b.title));
+            } else if (currentSort === 'progress') {
+                sorted.sort((a, b) => b.progress - a.progress);
+            }
+
+            return sorted;
+        }
+
+        function formatTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            } else if (minutes > 0) {
+                return `${minutes}m`;
+            } else {
+                return `${seconds}s`;
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            // Remove existing toasts
+            document.querySelectorAll('.toast').forEach(t => t.remove());
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${icons[type] || icons.info}</span><span>${message}</span>`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function closeModal() {
+            addPdfModal.classList.remove('active');
+            pdfUrlInput.value = '';
+            pdfTitleInput.value = '';
+            pdfCategoryInput.value = '';
+        }
+
+        addPdfBtn.addEventListener('click', () => {
+            // Request password before adding
+            pendingAction = 'add';
+            passwordActionText.textContent = 'Enter password to add a new PDF';
+            passwordInput.value = '';
+            passwordError.classList.remove('show');
+            passwordModal.classList.add('active');
+            setTimeout(() => passwordInput.focus(), 100);
+        });
+
+        cancelAddBtn.addEventListener('click', closeModal);
+        confirmAddBtn.addEventListener('click', addPDF);
+
+        addPdfModal.addEventListener('click', (e) => {
+            if (e.target === addPdfModal) closeModal();
+        });
+
+        // Debounce search for performance
+        let searchTimeout;
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(renderLibrary, 300);
+        });
+        filterSelect.addEventListener('change', (e) => {
+            currentFilter = e.target.value;
+            renderLibrary();
+        });
+        sortSelect.addEventListener('change', (e) => {
+            currentSort = e.target.value;
+            renderLibrary();
+        });
+
+        gridViewBtn.addEventListener('click', () => {
+            currentView = 'grid';
+            gridViewBtn.classList.add('active');
+            listViewBtn.classList.remove('active');
+            renderLibrary();
+        });
+
+        listViewBtn.addEventListener('click', () => {
+            currentView = 'list';
+            listViewBtn.classList.add('active');
+            gridViewBtn.classList.remove('active');
+            renderLibrary();
+        });
+
+        const statsModal = document.getElementById('stats-modal');
+        const closeStatsBtn = document.getElementById('close-stats-btn');
+
+        statsBtn.addEventListener('click', () => {
+            // Request password before showing stats
+            pendingAction = 'stats';
+            passwordActionText.textContent = 'Enter password to view statistics';
+            passwordInput.value = '';
+            passwordError.classList.remove('show');
+            passwordModal.classList.add('active');
+            setTimeout(() => passwordInput.focus(), 100);
+        });
+
+        function showStats() {
+            const totalPDFs = library.length;
+            const totalFavorites = library.filter(pdf => pdf.favorite).length;
+            const totalTime = library.reduce((sum, pdf) => sum + (pdf.readingTime || 0), 0);
+            const avgProgress = library.length > 0 
+                ? (library.reduce((sum, pdf) => sum + pdf.progress, 0) / library.length).toFixed(1)
+                : 0;
+
+            document.getElementById('stat-total').textContent = totalPDFs;
+            document.getElementById('stat-favorites').textContent = totalFavorites;
+            document.getElementById('stat-time').textContent = formatTime(totalTime);
+            document.getElementById('stat-progress').textContent = avgProgress + '%';
+            
+            statsModal.classList.add('active');
+        }
+
+        closeStatsBtn.addEventListener('click', () => {
+            statsModal.classList.remove('active');
+        });
+
+        statsModal.addEventListener('click', (e) => {
+            if (e.target === statsModal) statsModal.classList.remove('active');
+        });
+
+        // Confirm modal handlers
+        confirmCancelBtn.addEventListener('click', () => {
+            pendingDeleteId = null;
+            confirmModal.classList.remove('active');
+        });
+
+        confirmDeleteBtn.addEventListener('click', confirmDelete);
+
+        confirmModal.addEventListener('click', (e) => {
+            if (e.target === confirmModal) {
+                pendingDeleteId = null;
+                confirmModal.classList.remove('active');
+            }
+        });
+
+        // Password modal handlers
+        function verifyPassword() {
+            if (passwordInput.value === APP_PASSWORD) {
+                passwordModal.classList.remove('active');
+                passwordError.classList.remove('show');
+                
+                if (pendingAction === 'add') {
+                    addPdfModal.classList.add('active');
+                    setTimeout(() => pdfUrlInput.focus(), 100);
+                } else if (pendingAction === 'delete') {
+                    const pdf = library.find(p => p.id === pendingDeleteId);
+                    if (pdf) {
+                        document.getElementById('confirm-message').textContent = 
+                            `Are you sure you want to remove "${pdf.title}" from your library?`;
+                        confirmModal.classList.add('active');
+                    }
+                } else if (pendingAction === 'stats') {
+                    showStats();
+                }
+                pendingAction = null;
+            } else {
+                passwordError.classList.add('show');
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        }
+
+        passwordSubmitBtn.addEventListener('click', verifyPassword);
+        
+        passwordCancelBtn.addEventListener('click', () => {
+            passwordModal.classList.remove('active');
+            passwordError.classList.remove('show');
+            pendingAction = null;
+            pendingDeleteId = null;
+        });
+
+        passwordModal.addEventListener('click', (e) => {
+            if (e.target === passwordModal) {
+                passwordModal.classList.remove('active');
+                passwordError.classList.remove('show');
+                pendingAction = null;
+                pendingDeleteId = null;
+            }
+        });
+
+        passwordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                verifyPassword();
+            }
+        });
+
+        loadLibrary();
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                statsModal.classList.remove('active');
+                confirmModal.classList.remove('active');
+                passwordModal.classList.remove('active');
+                passwordError.classList.remove('show');
+                pendingDeleteId = null;
+                pendingAction = null;
+            }
+            // Enter key in Add PDF modal
+            if (e.key === 'Enter' && addPdfModal.classList.contains('active')) {
+                const activeElement = document.activeElement;
+                if (activeElement.tagName !== 'SELECT') {
+                    e.preventDefault();
+                    addPDF();
+                }
+            }
+        });
+    </script>
+
+    <footer class="glass-panel">
+        <p>PDF Library &copy; <span id="current-year">2024</span> &bull; Built with PDF.js &bull; 
+            <a href="https://github.com" target="_blank" rel="noopener">GitHub</a>
+        </p>
+    </footer>
+    <script>document.getElementById('current-year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
